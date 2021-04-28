@@ -1,20 +1,5 @@
 package project.BankManagementSystem.Model;
 
-import java.util.Date;
-
-import org.jnosql.artemis.Entity;
-
-import com.couchbase.client.java.document.json.JsonObject;
-
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
-@AllArgsConstructor
-@NoArgsConstructor
-@Getter
-@Setter
 
 public class LoanDetails {
 	
@@ -25,22 +10,66 @@ public class LoanDetails {
 	private String durationOfLoan;
 	
 	
-	public JsonObject toJson() {
-		 JsonObject json=JsonObject.empty()
-					.put("loanType", loanType)
-					.put("loanAmount", loanAmount)
-					.put("date", date)
-					.put("rateOfInterest", rateOfInterest)
-					.put("durationOfLoan",durationOfLoan);
-		 return json;
-		 
-	 }
+	public LoanDetails() {
+		super();
+		// TODO Auto-generated constructor stub
+	}
+
+	public LoanDetails(String loanType, String loanAmount, String date, String rateOfInterest, String durationOfLoan) {
+		super();
+		this.loanType = loanType;
+		this.loanAmount = loanAmount;
+		this.date = date;
+		this.rateOfInterest = rateOfInterest;
+		this.durationOfLoan = durationOfLoan;
+	}
+
+	public String getLoanType() {
+		return loanType;
+	}
+
+	public void setLoanType(String loanType) {
+		this.loanType = loanType;
+	}
+
+	public String getLoanAmount() {
+		return loanAmount;
+	}
+
+	public void setLoanAmount(String loanAmount) {
+		this.loanAmount = loanAmount;
+	}
+
+	public String getDate() {
+		return date;
+	}
+
+	public void setDate(String date) {
+		this.date = date;
+	}
+
+	public String getRateOfInterest() {
+		return rateOfInterest;
+	}
+
+	public void setRateOfInterest(String rateOfInterest) {
+		this.rateOfInterest = rateOfInterest;
+	}
+
+	public String getDurationOfLoan() {
+		return durationOfLoan;
+	}
+
+	public void setDurationOfLoan(String durationOfLoan) {
+		this.durationOfLoan = durationOfLoan;
+	}
+
 	 
-	 public void fromJson(JsonObject object) {
-		 loanType=object.getString("loanType");
-		 loanAmount=object.getString("loanAmount");
-		 date=object.getString("date");
-		 rateOfInterest=object.getString("rateOfInterest");
-		 durationOfLoan=object.getString("durationOfLoan");
+	 public void convert(LoanDetails object) {
+		 	loanType=object.getLoanType();
+		 	loanAmount=object.getLoanAmount();
+		 	date=object.getDate();
+		 	rateOfInterest=object.getRateOfInterest();
+		 	durationOfLoan=object.getDurationOfLoan();
 	 }
 }

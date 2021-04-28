@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: firebase-vertex-bms
+    labels:
+        app: firebase-vertex-bms
+spec:
+    replicas: 3
+    selector:
+        matchLabels:
+            app: firebase-vertex-bms
+    template:
+        metadata:
+            labels:
+                app: firebase-vertex-bms
+        spec:
+            containers:
+            - name: firebase-vertex
+              image: 277014/bms-f:1.0
+              ports:
+              - containerPort: 8081

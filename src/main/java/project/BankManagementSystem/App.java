@@ -1,10 +1,14 @@
 package project.BankManagementSystem;
 
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 
-import com.couchbase.client.java.Bucket;
-import com.couchbase.client.java.Cluster;
-import com.couchbase.client.java.document.JsonDocument;
-import com.couchbase.client.java.document.json.JsonObject;
+
+import com.google.api.core.ApiFuture;
+import com.google.cloud.firestore.DocumentReference;
+import com.google.cloud.firestore.DocumentSnapshot;
+import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.WriteResult;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServer;
@@ -18,109 +22,97 @@ import project.BankManagementSystem.Model.LoanDetails;
 import project.BankManagementSystem.Model.Login;
 import project.BankManagementSystemconnection.Connection;
 
-/**
- * Hello world!
- *
- */
 public class App {
-	public static void main(String[] args) {
-//       System.out.println( "Hello World!" );
-
-		
-
+	public static void main(String[] args) throws IOException {
 		Customer customer = new Customer();
 
 		Vertx vertx = Vertx.vertx();
-
 		HttpServer httpServer = vertx.createHttpServer();
-
 		Router router = Router.router(vertx);
+
 		router.post("/register").handler(BodyHandler.create()).handler(routingContext -> {
 			final Customer cust = Json.decodeValue(routingContext.getBody(), Customer.class);
 
-			Cluster cluster = Connection.getConnection();
-			Bucket bucket = cluster.openBucket("heroes");
-					
-			JsonObject json=cust.toJson();
-			String uniquekey = cust.getUsername() + cust.getPassword();
-
-			JsonDocument content = JsonDocument.create(uniquekey, json);
-			bucket.upsert(content);
-
+			Firestore db;
+			try {
+				db = Connection.getConnection();
+				DocumentReference docRef = db.collection("Client").document(cust.getUsername()+cust.getPassword());
+				ApiFuture<WriteResult> result = docRef.set(cust);
+			}
+			catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			HttpServerResponse response = routingContext.response();
 			response.setChunked(true);
-			response.end("Customer added successfully");
+			response.end("Client added successfully");
 
 		});
 
-		
-		
 		router.post("/login").handler(BodyHandler.create()).handler(routingContext -> {
 			final Login login = Json.decodeValue(routingContext.getBody(), Login.class);
 
-			Cluster cluster = Connection.getConnection();
-			Bucket bucket = cluster.openBucket("heroes");
-
-			String uniquekey = login.getUsername() + login.getPassword();
-			final JsonDocument answer = bucket.get(uniquekey);
-			JsonObject object = null;
-			if (answer != null) {
-
-				object = answer.content();
-				customer.fromJson(object);
-		}
-			if (object != null) {
-				HttpServerResponse response = routingContext.response();
+			Firestore db;
+			try {
+				db = Connection.getConnection();
+			DocumentReference docRef = db.collection("Client").document(login.getUsername()+login.getPassword());
+	    	ApiFuture<DocumentSnapshot> future = docRef.get();
+	    	DocumentSnapshot document = future.get();
+	    	if (document.exists()) {
+	    		customer.convert(document.toObject(Customer.class)) ;
+	    		HttpServerResponse response = routingContext.response();
 				response.setChunked(true);
 				response.end("Login successfully");
-			} else {
-				HttpServerResponse response = routingContext.response();
+	    	} else {
+	    		HttpServerResponse response = routingContext.response();
 				response.setChunked(true);
 				response.end("Invalid Credential");
+	    }
+			} catch (IOException | InterruptedException | ExecutionException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 
 		});
-
-		
 		
 		router.post("/update").handler(BodyHandler.create()).handler(routingContext -> {
 			final Customer customer1;
+			Boolean isAuthenticated=customer.getName()=="";
 
-			if (customer.getName() == "") {
+			if (isAuthenticated) {
 				HttpServerResponse response = routingContext.response();
 				response.setChunked(true);
-				response.end("Customer Not logged In ");
+				response.end("Client Not logged In ");
 			} else {
 
 				customer1 = Json.decodeValue(routingContext.getBody(), Customer.class);
-
-				String uniquekey = customer.getUsername() + customer.getPassword();
-				customer.convert(customer1);
+				Firestore db;
+				try {
+					db = Connection.getConnection();
+					db.collection("Client").document(customer.getUsername()+customer.getPassword()).delete();
+					customer.convert(customer1);
+					db.collection("Client").document(customer.getUsername()+customer.getPassword()).set(customer);				
 
 				HttpServerResponse response = routingContext.response();
 				response.setChunked(true);
 				response.end("Details updated successfully");
 
-				Cluster cluster = Connection.getConnection();
-				Bucket bucket = cluster.openBucket("heroes");
-
-				JsonObject json =customer.toJson();
-				JsonDocument content = JsonDocument.create(customer.getUsername() + customer.getPassword(), json);
-				bucket.remove(uniquekey);
-
-				bucket.upsert(content);
-
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		});
-
 		
 		router.get("/logout").handler(routingContext -> {
 
-			if (customer.getName() == "") {
+			Boolean isAuthenticated=customer.getName()=="";
+
+			if (isAuthenticated){
 
 				HttpServerResponse response = routingContext.response();
 				response.setChunked(true);
-				response.end("User Not logged In ");
+				response.end("Client Not logged In ");
 
 			} else {
 
@@ -131,10 +123,12 @@ public class App {
 
 			}
 		});
-
-		
+//
+//		
 		router.post("/applyforloan").handler(BodyHandler.create()).handler(routingContext -> {
-			if(customer.getName() != "") {
+			Boolean isAuthenticated=customer.getName()!="";
+
+			if (isAuthenticated){
 				final LoanDetails loan = Json.decodeValue(routingContext.getBody(), LoanDetails.class);
 				if(loan.getLoanType()=="CarLoan")
 					loan.setRateOfInterest("7");
@@ -143,47 +137,52 @@ public class App {
 				else
 					loan.setDate("4");
 
-				Cluster cluster = Connection.getConnection();
-				Bucket bucket = cluster.openBucket("Loan");
-				
-				JsonObject json = loan.toJson();
-				String uniquekey = customer.getAccountNumber();
-
-				JsonDocument content = JsonDocument.create(uniquekey, json);
-				bucket.upsert(content);
-				
+				Firestore db;
+				try {
+					db = Connection.getConnection();
+				db.collection("Loan").document(customer.getAccountNumber()).set(loan);			
 				HttpServerResponse response = routingContext.response();
 				response.setChunked(true);
 				response.end("Loan Applied Successfully");
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				
 			}else {
 				HttpServerResponse response = routingContext.response();
 				response.setChunked(true);
-				response.end("User Not logged In ");
+				response.end("Client Not logged In ");
 				
 			}
 			
 
 		});
-		
 
-		
 		router.get("/viewloandetails").handler(BodyHandler.create()).handler(routingContext -> {
-			if(customer.getName() != "") {
-				Cluster cluster = Connection.getConnection();
-				Bucket bucket = cluster.openBucket("Loan");
+			Boolean isAuthenticated=customer.getName()!="";
+
+			if (isAuthenticated) {
+				Firestore db;
+				try {
+					db = Connection.getConnection();
 				
-				String uniquekey = customer.getAccountNumber();
+				DocumentReference docRef=db.collection("Loan").document(customer.getAccountNumber());
+				ApiFuture<DocumentSnapshot> future= docRef.get();
+				DocumentSnapshot document = future.get();
 				
-				final JsonDocument answer = bucket.get(uniquekey);
-				if(answer!=null) {
-					JsonObject object = answer.content();
+				if(document.exists()) {
+					
 					HttpServerResponse response = routingContext.response();
 					response.setChunked(true);
 					LoanDetails loan=new LoanDetails();
-					loan.fromJson(object);
+					loan.convert(document.toObject(LoanDetails.class));
 					response.end(Json.encodePrettily(loan));
 					
+				}
+				} catch (IOException | InterruptedException | ExecutionException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
 				
 			}else {
@@ -194,8 +193,8 @@ public class App {
 			}
 		});
 
-
-		httpServer.requestHandler(router::accept).listen(8080);
+		httpServer.requestHandler(router::accept).listen(8081);
+		System.in.read();
 
 	}
 

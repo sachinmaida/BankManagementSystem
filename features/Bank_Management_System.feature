@@ -22,14 +22,14 @@ Scenario Outline: To check customer login
       | "chinmay"| "qwerty" | 200|
       | "sfef" | "wrw" | 200|
   
-@P3
-Scenario Outline: To check customer registration 
-    Given I want to register with <username> and <password> and <name> and <address> and <state> and <country> and <emailaddress> and <PAN> and <contactnumber> and <Accounttype> 
-    When I click on register in step
-    Then I verify the <statuscode>
-    Examples:
-    | username  | password | name  | address  | state | country  |   emailaddress  | PAN  | contactnumber | Accounttype  | status  |
-    | "roshen123"  | "qwerty" | "Roshen"  | "Kota"  | "rajasthsn" | "India"  |   "chinmay@abc.com"  | "qwedwsr1"  | "123456789" | "carloan"  |  200  |
+#@P3
+#Scenario Outline: To check customer registration 
+#    Given I want to register with <username> and <password> and <name> and <address> and <state> and <country> and <emailaddress> and <PAN> and <contactnumber> and <Accounttype> 
+#   When I click on register in step
+#    Then I verify the <statuscode>
+#    Examples:
+#    | username  | password | name  | address  | state | country  |   emailaddress  | PAN  | contactnumber | Accounttype  | status  |
+#    | "roshen123"  | "qwerty" | "Roshen"  | "Kota"  | "rajasthsn" | "India"  |   "chinmay@abc.com"  | "qwedwsr1"  | "123456789" | "carloan"  |  200  |
      
 @P4
 Scenario Outline: To Apply for loan to customer
